@@ -4,12 +4,12 @@ A Golang-based SSE (Server-Sent Events) virtualization layer that maintains pers
 
 ## Features
 
-- 🔄 **Persistent SSE Connections**: Maintains long-lived connections with automatic heartbeat
-- ⚡ **On-Demand Function Invocation**: Functions only run when needed, optimizing costs
-- 🗄️ **Redis State Management**: Reliable state persistence and connection tracking
-- 📊 **Real-time Monitoring**: Built-in health checks and metrics
-- 🔧 **Function Registry**: Dynamic function registration and health monitoring
-- 🚀 **High Performance**: Built with Go for optimal performance and concurrency
+- **Persistent SSE Connections**: Maintains long-lived connections with automatic heartbeat
+- **On-Demand Function Invocation**: Functions only run when needed, optimizing costs
+- **Redis State Management**: Reliable state persistence and connection tracking
+- **Real-time Monitoring**: Built-in health checks and metrics
+- **Function Registry**: Dynamic function registration and health monitoring
+- **High Performance**: Built with Go for optimal performance and concurrency
 
 ## Quick Start
 
