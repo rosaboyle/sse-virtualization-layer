@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE Virtualization Manager - Client Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .log-info { background: #e3f2fd; }
+        .log-success { background: #e8f5e8; }
+        .log-error { background: #ffebee; }
+        .log-warning { background: #fff3e0; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed; 
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-family: inherit;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        .status.connecting { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>SSE Virtualization Manager - Client Example</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h3>SSE Connection</h3>
+            <div id="status" class="status disconnected">Disconnected</div>
+            
+            <label>Client ID:</label>
+            <input type="text" id="clientId" value="demo-client-123" />
+            
+            <label>Server URL:</label>
+            <input type="text" id="serverUrl" value="http://localhost:8080" />
+            
+            <div>
+                <button id="connectBtn" onclick="connect()">Connect</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+                <button onclick="clearLog()">Clear Log</button>
+            </div>
+            
+            <h4>Connection Log</h4>
+            <div id="connectionLog" class="log"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Function Invocation</h3>
+            
+            <label>Function Name:</label>
+            <input type="text" id="functionName" value="echo" />
+            
+            <label>Payload (JSON):</label>
+            <textarea id="payload" rows="4">{"message": "Hello World!", "timestamp": "2024-01-01T00:00:00Z"}</textarea>
+            
+            <div>
+                <button onclick="invokeFunction()">Invoke Function</button>
+                <button onclick="registerExampleFunction()">Register Echo Function</button>
+            </div>
+            
+            <h4>Function Results</h4>
+            <div id="functionLog" class="log"></div>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top: 20px;">
+        <h3>System Status</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <button onclick="checkHealth()">Check Health</button>
+            <button onclick="getConnections()">Get Connections</button>
+            <button onclick="getFunctions()">Get Functions</button>
+            <button onclick="sendTestMessage()">Send Test Message</button>
+        </div>
+        
+        <h4>System Log</h4>
+        <div id="systemLog" class="log"></div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let isConnected = false;
+
+        function log(message, type = 'info', logElement = 'connectionLog') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById(logElement);
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(status, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = message;
+        }
+
+        function connect() {
+            if (isConnected) {
+                log('Already connected', 'warning');
+                return;
+            }
+
+            const clientId = document.getElementById('clientId').value;
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            if (!clientId.trim()) {
+                log('Client ID is required', 'error');
+                return;
+            }
+
+            updateStatus('connecting', 'Connecting...');
+            log(`Connecting to ${serverUrl}/sse/${clientId}`, 'info');
+
+            const url = `${serverUrl}/sse/${clientId}?app=demo&version=1.0&browser=${navigator.userAgent.split(' ')[0]}`;
+            eventSource = new EventSource(url);
+
+            eventSource.onopen = function(event) {
+                isConnected = true;
+                updateStatus('connected', 'Connected');
+                log('Connected to SSE stream', 'success');
+                
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+            };
+
+            eventSource.addEventListener('connected', function(event) {
+                const data = JSON.parse(event.data);
+                log(`Server connection established: ${data.connection_id}`, 'success');
+            });
+
+            eventSource.addEventListener('heartbeat', function(event) {
+                const data = JSON.parse(event.data);
+                log(`Heartbeat: ${new Date(data.timestamp * 1000).toLocaleTimeString()}`, 'info');
+            });
+
+            eventSource.addEventListener('function_response', function(event) {
+                const response = JSON.parse(event.data);
+                log(`Function response received: ${response.request_id}`, 'success', 'functionLog');
+                log(`Success: ${response.success}, Duration: ${response.duration}ms`, 'info', 'functionLog');
+                
+                if (response.success) {
+                    log(`Data: ${JSON.stringify(response.data, null, 2)}`, 'success', 'functionLog');
+                } else {
+                    log(`Error: ${response.error}`, 'error', 'functionLog');
+                }
+            });
+
+            eventSource.onerror = function(event) {
+                log('SSE connection error', 'error');
+                if (isConnected) {
+                    updateStatus('disconnected', 'Connection Lost');
+                    isConnected = false;
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                }
+            };
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            
+            isConnected = false;
+            updateStatus('disconnected', 'Disconnected');
+            log('Disconnected from SSE stream', 'warning');
+            
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+
+        function invokeFunction() {
+            const functionName = document.getElementById('functionName').value;
+            const payloadText = document.getElementById('payload').value;
+            const clientId = document.getElementById('clientId').value;
+            const serverUrl = document.getElementById('serverUrl').value;
+
+            if (!functionName.trim()) {
+                log('Function name is required', 'error', 'functionLog');
+                return;
+            }
+
+            let payload;
+            try {
+                payload = JSON.parse(payloadText);
+            } catch (e) {
+                log(`Invalid JSON payload: ${e.message}`, 'error', 'functionLog');
+                return;
+            }
+
+            const request = {
+                payload: payload,
+                client_id: clientId,
+                async: true
+            };
+
+            log(`Invoking function: ${functionName}`, 'info', 'functionLog');
+
+            fetch(`${serverUrl}/invoke/${functionName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            })
+            .then(response => response.json())
+            .then(data => {
+                log(`HTTP Response: ${data.request_id}`, 'info', 'functionLog');
+                if (!data.success) {
+                    log(`Error: ${data.error}`, 'error', 'functionLog');
+                }
+            })
+            .catch(error => {
+                log(`Invocation failed: ${error.message}`, 'error', 'functionLog');
+            });
+        }
+
+        function registerExampleFunction() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            const functionConfig = {
+                name: "echo",
+                endpoint: "https://httpbin.org/post",
+                method: "POST",
+                timeout: "30s",
+                description: "Echo service for testing"
+            };
+
+            log('Registering echo function...', 'info', 'systemLog');
+
+            fetch(`${serverUrl}/admin/functions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(functionConfig)
+            })
+            .then(response => response.json())
+            .then(data => {
+                log(`Function registered: ${data.name}`, 'success', 'systemLog');
+            })
+            .catch(error => {
+                log(`Registration failed: ${error.message}`, 'error', 'systemLog');
+            });
+        }
+
+        function checkHealth() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            fetch(`${serverUrl}/admin/health`)
+            .then(response => response.json())
+            .then(data => {
+                log(`Health: ${data.status}`, 'success', 'systemLog');
+                log(`Connections: ${data.active_connections}, Functions: ${data.registered_functions}`, 'info', 'systemLog');
+                log(`Uptime: ${Math.round(data.uptime / 1000000000)}s`, 'info', 'systemLog');
+            })
+            .catch(error => {
+                log(`Health check failed: ${error.message}`, 'error', 'systemLog');
+            });
+        }
+
+        function getConnections() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            fetch(`${serverUrl}/admin/connections`)
+            .then(response => response.json())
+            .then(data => {
+                log(`Active connections: ${data.connections.length}`, 'info', 'systemLog');
+                log(`Stats: ${JSON.stringify(data.stats, null, 2)}`, 'info', 'systemLog');
+            })
+            .catch(error => {
+                log(`Failed to get connections: ${error.message}`, 'error', 'systemLog');
+            });
+        }
+
+        function getFunctions() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            fetch(`${serverUrl}/admin/functions`)
+            .then(response => response.json())
+            .then(data => {
+                log(`Registered functions: ${data.count}`, 'info', 'systemLog');
+                data.functions.forEach(fn => {
+                    log(`- ${fn.name}: ${fn.endpoint} (${fn.is_active ? 'active' : 'inactive'})`, 'info', 'systemLog');
+                });
+            })
+            .catch(error => {
+                log(`Failed to get functions: ${error.message}`, 'error', 'systemLog');
+            });
+        }
+
+        function sendTestMessage() {
+            if (!isConnected) {
+                log('Not connected to SSE', 'error', 'systemLog');
+                return;
+            }
+
+            // This would typically be done from the server side,
+            // but we can trigger a function invocation as a test
+            invokeFunction();
+        }
+
+        function clearLog() {
+            document.getElementById('connectionLog').innerHTML = '';
+            document.getElementById('functionLog').innerHTML = '';
+            document.getElementById('systemLog').innerHTML = '';
+        }
+
+        // Auto-connect on load if server is available
+        window.onload = function() {
+            log('SSE Virtualization Manager Client Ready', 'info', 'systemLog');
+        };
+    </script>
+</body>
+</html>
