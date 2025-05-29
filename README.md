@@ -1,4 +1,4 @@
-# SSE Virtualization Layer for Remote (Model Context Protocol) Servers
+# SSE Virtualization Layer for Remote MCP (Model Context Protocol) Servers
 
 A Golang-based SSE (Server-Sent Events) virtualization layer that maintains persistent connections while only invoking serverless functions on-demand. This architecture optimizes costs and improves user experience by separating connection management from function execution.
 
