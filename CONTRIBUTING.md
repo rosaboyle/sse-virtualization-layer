@@ -35,8 +35,8 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 
 1. **Clone and setup:**
 ```bash
-git clone https://github.com/yourusername/sse-virtualization-manager.git
-cd sse-virtualization-manager
+git clone https://github.com/rosaboyle/sse-virtualization-layer.git
+cd sse-virtualization-layer
 cp .env.example .env
 ```
 
