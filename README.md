@@ -28,17 +28,24 @@ docker-compose down
 
 ### Manual Setup
 
-1. **Start Redis:**
+1. **Clone and setup:**
+```bash
+git clone https://github.com/rosaboyle/sse-virtualization-layer.git
+cd sse-virtualization-layer
+cp .env.example .env
+```
+
+2. **Start Redis:**
 ```bash
 docker run -d --name redis -p 6379:6379 redis:7-alpine
 ```
 
-2. **Install dependencies:**
+3. **Install dependencies:**
 ```bash
 go mod tidy
 ```
 
-3. **Run the application:**
+4. **Run the application:**
 ```bash
 go run main.go
 ```
@@ -257,7 +264,7 @@ go test ./...
 
 **Build Docker image:**
 ```bash
-docker build -t sse-virtualization-manager .
+docker build -t sse-virtualization-layer .
 ```
 
 ## Contributing

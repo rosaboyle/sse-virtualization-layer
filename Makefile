@@ -1,5 +1,5 @@
 BINARY_NAME=virtualization-manager
-DOCKER_IMAGE=sse-virtualization-manager
+DOCKER_IMAGE=sse-virtualization-layer
 
 .PHONY: build run test clean docker-build docker-run docker-compose-up docker-compose-down deps
 
@@ -77,5 +77,5 @@ deploy: docker-build docker-compose-up
 
 # Full cleanup
 nuke: docker-compose-down clean
-	docker rmi $(DOCKER_IMAGE) 2>/dev/null || true
+	docker rmi $(DOCKER_IMAGE) || true
 	docker volume prune -f
