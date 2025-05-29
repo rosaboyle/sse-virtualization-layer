@@ -86,12 +86,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version History
 
 ### Legend
-- 🎉 **Added** - New features
-- 🐛 **Fixed** - Bug fixes  
-- 🔄 **Changed** - Changes in existing functionality
-- 🗑️ **Deprecated** - Soon-to-be removed features
-- ❌ **Removed** - Removed features
-- 🔒 **Security** - Security improvements
+- **Added** - New features
+- **Fixed** - Bug fixes  
+- **Changed** - Changes in existing functionality
+- **Deprecated** - Soon-to-be removed features
+- **Removed** - Removed features
+- **Security** - Security improvements
 
 ---
 
@@ -130,4 +130,4 @@ This is the initial stable release. No upgrade path needed.
 
 ---
 
-*For detailed information about any release, see the [GitHub Releases](https://github.com/yourusername/sse-virtualization-manager/releases) page.*
+*For detailed information about any release, see the [GitHub Releases](https://github.com/rosaboyle/sse-virtualization-layer/releases) page.*
